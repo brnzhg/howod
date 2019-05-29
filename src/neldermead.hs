@@ -17,7 +17,9 @@ import Data.Singletons (Sing, sing, fromSing)
 import Data.Singletons.TypeLits
 
 import qualified Data.Vector.Sized as V
+import qualified Data.Vector.Storable.Sized as SV
 import Numeric.LinearAlgebra.Static
+import Numeric.LinearAlgebra.Static.Vector
 import GHC.TypeNats
 
 --TODO in future, allow more flexibility in objective?
@@ -42,15 +44,18 @@ clampMaybe lb ub x = x''
     x'' = fromMaybe x' $ min x' <$> ub
     x' = fromMaybe x $ max x <$> lb
 
+--TODO redo to support storable
 projectToBox :: forall n. KnownNat n
-  => BoxConstraints n -> V.Vector n ℝ -> V.Vector n ℝ
+  => BoxConstraints n -> SV.Vector n ℝ -> SV.Vector n ℝ
 projectToBox (BoxConstraints lb ub) = V.zipWith3 clampMaybe lb ub
 
 
 haftkaGurdalSimplex :: forall n. KnownNat n => ℝ -> R n -> Simplex n
 haftkaGurdalSimplex size x0 = Simplex
-  $ col x0 ||| build (\i j -> bool pMinQ 0 (i == j))
+  $ col x0
+  ||| build (\i j -> (V.index vx0 i) + (bool pMinQ 0 (i == j)))
   where
+    vx0 = rVec x0
     pMinQ = c * l
     q = c * (sqrt (l + 1) - 1)
     c = size / (l * sqrt 2)
