@@ -8,6 +8,11 @@
 
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.KnownNat.Solver #-}
 
+module Neldermead (
+  Simplex(..)
+  , haftkaGurdalSimplex
+  ) where
+
 import Data.Bool (bool)
 import Data.Maybe (fromMaybe)
 import Data.Monoid (Sum)
@@ -22,6 +27,10 @@ import Numeric.LinearAlgebra.Static
 import Numeric.LinearAlgebra.Static.Vector
 import GHC.TypeNats
 
+import qualified Control.Lens as L
+import qualified Control.Lens.Iso as LI
+import qualified Control.Lens.Traversal as LT
+
 --TODO in future, allow more flexibility in objective?
 --maybe this is ok, allow objective to have writer monad
 data NMVertex n = NMVertex { x :: !(R n)
@@ -31,12 +40,17 @@ data NMVertex n = NMVertex { x :: !(R n)
 newtype NMSimplex n = NMSimplex { fOrderedVertices :: V.Vector n (NMVertex n) }
 
 newtype Simplex n = Simplex { xA :: L n (1 + n) }
+    deriving (Show)
 
+--TODO ok for these to be impossible? guess so
 data BoxConstraints n = BoxConstraints
   { lb :: !(V.Vector n (Maybe ℝ))
   , ub :: !(V.Vector n (Maybe ℝ))
   }
 
+
+rVecIso :: forall n. KnownNat n => LI.Iso' (R n) (SV.Vector n ℝ)
+rVecIso = LI.iso rVec vecR
 
 clampMaybe :: Ord a => Maybe a -> Maybe a -> a -> a
 clampMaybe lb ub x = x''
@@ -46,21 +60,42 @@ clampMaybe lb ub x = x''
 
 --TODO redo to support storable
 projectToBox :: forall n. KnownNat n
-  => BoxConstraints n -> SV.Vector n ℝ -> SV.Vector n ℝ
+ => BoxConstraints n -> V.Vector n ℝ -> V.Vector n ℝ
 projectToBox (BoxConstraints lb ub) = V.zipWith3 clampMaybe lb ub
 
+{-
+haftkaGurdalSimplex :: forall n. KnownNat n => ℝ -> R n -> Simplex n
+haftkaGurdalSimplex size x0 = undefined
+    where
+      --TODO lens here, rVecIso
+      (cols :: V.Vector (1 + n) (R n)) = 
+        V.generate $ (\j -> x0 L.& rVecIso L.%~ (f j))
+      --bob = over (rVecIso) (const x0) x0
+      f :: F.Finite (1 + n) -> SV.Vector n ℝ -> SV.Vector n ℝ
+      f j v = flip SV.imap v $ \i x -> x + step i j
+      step i j
+        | toInteger j == toInteger n' = 0
+        | toInteger j == toInteger i = q + (c * l)
+        | otherwise = q
+      q = c * (sqrt (l + 1) - 1)
+      c = size / (l * sqrt 2)
+      l = fromIntegral n'
+      n' = fromSing $ (sing :: Sing n)
+-}
 
 haftkaGurdalSimplex :: forall n. KnownNat n => ℝ -> R n -> Simplex n
-haftkaGurdalSimplex size x0 = Simplex
-  $ col x0
-  ||| build (\i j -> (V.index vx0 i) + (bool pMinQ 0 (i == j)))
-  where
-    vx0 = rVec x0
-    pMinQ = c * l
-    q = c * (sqrt (l + 1) - 1)
-    c = size / (l * sqrt 2)
-    l = fromIntegral . fromSing $ (sing :: Sing n)
-
+haftkaGurdalSimplex size x0 = Simplex . colsL $ cols
+    where
+      (cols :: V.Vector (1 + n) (R n)) = 
+        V.generate $ \j -> x0 L.& rVecIso L.%~ (SV.imap (\i x -> x + step i j))
+      step i j
+        | toInteger j == toInteger n' = 0
+        | toInteger j == toInteger i = q + (c * l)
+        | otherwise = q
+      q = c * (sqrt (l + 1) - 1)
+      c = size / (l * sqrt 2)
+      l = fromIntegral n'
+      n' = fromSing $ (sing :: Sing n)
 
 
 centroid :: forall n t. (KnownNat n, Foldable t) => t (R n) -> R n
