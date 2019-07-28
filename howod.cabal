@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 015ead9d3424aeefcea6b8a37869f003d9ca8e48277f6c1a3502dc56d5aa9b67
+-- hash: 4334d545ef8f84695a60ac68301c46e6c54f6b5cfc63af461703ca83292fa37a
 
 name:           howod
 version:        0.1.0.0
@@ -41,6 +41,7 @@ library
     , ghc-typelits-knownnat
     , hmatrix
     , hmatrix-vector-sized
+    , intervals
     , lens
     , mtl
     , singletons

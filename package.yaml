@@ -35,6 +35,7 @@ library:
   - finite-typelits
   - ghc-typelits-knownnat
   - MonadRandom
+  - intervals
 
 
 executables:
