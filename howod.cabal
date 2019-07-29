@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4334d545ef8f84695a60ac68301c46e6c54f6b5cfc63af461703ca83292fa37a
+-- hash: 68f962c0bde41a8a5d68de79ca2b18e69cdec4cd83e7f62ce993787f45777a49
 
 name:           howod
 version:        0.1.0.0
@@ -43,8 +43,11 @@ library
     , hmatrix-vector-sized
     , intervals
     , lens
+    , monad-loops
     , mtl
+    , primitive
     , singletons
+    , transformers
     , vector-sized
   default-language: Haskell2010
 
@@ -64,7 +67,7 @@ executable howod-exe
     , hmatrix
     , hmatrix-vector-sized
     , howod
-    , mtl
+    , transformers
     , vector-sized
   default-language: Haskell2010
 
@@ -79,5 +82,5 @@ test-suite howod-test
   build-depends:
       base >=4.7 && <5
     , howod
-    , mtl
+    , transformers
   default-language: Haskell2010
