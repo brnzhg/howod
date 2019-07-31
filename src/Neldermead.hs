@@ -6,7 +6,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators       #-}
 {-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE TypeApplications    #-}
 
+{-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.KnownNat.Solver #-}
 
 module Neldermead (
@@ -20,6 +22,7 @@ import Data.Bool (bool)
 import Data.Maybe (fromMaybe)
 import Data.Monoid (Sum)
 import qualified Data.Foldable as FLD
+import qualified Data.Proxy as PXY
 
 import Control.Arrow ((&&&))
 
@@ -44,12 +47,13 @@ import qualified Control.Lens.Traversal as LT
 --in any constructor, must take objective and then mark it
 
 --TODO in future, allow more flexibility in objective?
---maybe this is ok, allow objective to have writer monad
-data NMVertex n = NMVertex { x :: !(R n)
-                           , fx :: ℝ
+--TODO better field names or allow overloaded
+--TODO lenses
+data NMVertex n = NMVertex { getX :: !(R n)
+                           , getFx :: ℝ
                            }
 
-newtype NMSimplex n = NMSimplex { fOrderedVertices :: V.Vector n (NMVertex n) }
+newtype NMSimplex n = NMSimplex { fOrderedVertices :: V.Vector (n + 1) (NMVertex n) }
 
 newtype Simplex n = Simplex { xA :: L n (n + 1) }
     deriving (Show)
@@ -70,8 +74,21 @@ data NMEnv n = MEnv {
   , simplexConvergeTest :: NMSimplex n -> Bool
 }
 
+makeNMVertex :: KnownNat n => (R n -> ℝ) -> R n -> NMVertex n
+makeNMVertex f x = NMVertex { getX = x, getFx = f x }
 
---nextNMSimplex :: forall n. KnownNat n => NMSimplex n -> 
+nextNMSimplex :: forall n. (KnownNat n, 1 <= n) 
+  => NMScalars -> (R n -> ℝ) -> NMSimplex n -> NMSimplex n
+nextNMSimplex env f (NMSimplex vtxs)
+  | comparing getFx vtxReflect vtxl == LT = undefined --expand case
+  | comparing getFx vtxReflect vtxl2 == LT = undefined -- just keep swap out reflect and re-order
+  | otherwise = undefined --shrink case
+  where
+    vtxl = V.head vtxs
+    vtxl2 = V.index vtxs $ F.natToFinite (PXY.Proxy @1)
+    vtxh = V.last vtxs
+    xc = centroid $ getX <$> FLD.toList vtxs
+    vtxReflect = makeNMVertex f $ affineCombWith (getX vtxh) (reflectWeight env) xc
 
 
 

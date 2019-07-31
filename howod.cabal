@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 68f962c0bde41a8a5d68de79ca2b18e69cdec4cd83e7f62ce993787f45777a49
+-- hash: 87473ce56983b04f33f5e7e730704d0faffc0c1e2117bbc386b108cccce7a50b
 
 name:           howod
 version:        0.1.0.0
@@ -39,6 +39,7 @@ library
     , containers
     , finite-typelits
     , ghc-typelits-knownnat
+    , ghc-typelits-natnormalise
     , hmatrix
     , hmatrix-vector-sized
     , intervals

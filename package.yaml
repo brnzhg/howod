@@ -37,6 +37,7 @@ library:
   - singletons
   - finite-typelits
   - ghc-typelits-knownnat
+  - ghc-typelits-natnormalise
   - MonadRandom
   - intervals
 
