@@ -23,8 +23,10 @@ import Data.Maybe (fromMaybe)
 import Data.Monoid (Sum)
 import qualified Data.Foldable as FLD
 import qualified Data.Proxy as PXY
+import Data.Coerce
 
 import Control.Arrow ((&&&))
+import Control.Monad.State.Strict
 
 import qualified Numeric.Interval.NonEmpty as IVL
 
@@ -74,6 +76,8 @@ data NMEnv n = MEnv {
   , simplexConvergeTest :: NMSimplex n -> Bool
 }
 
+newtype OnBounds = OnBounds { unOnBounds :: Bool }
+
 makeNMVertex :: KnownNat n => (R n -> ℝ) -> R n -> NMVertex n
 makeNMVertex f x = NMVertex { getX = x, getFx = f x }
 
@@ -99,6 +103,15 @@ rVecIso = LI.iso rVec vecR
 projectToBox :: KnownNat n => BoxConstraints n -> R n -> R n
 projectToBox (BoxConstraints bc) = 
   L.over rVecIso $ SV.imap $ IVL.clamp . V.index bc
+
+-- Return bool is weather any dimension was clamped
+projectToBoxState :: KnownNat n 
+  => BoxConstraints n -> R n -> State OnBounds (R n)
+projectToBoxState (BoxConstraints bc) = L.mapMOf rVecIso 
+  $ SV.imapM $ \i x -> do
+    let bci = V.index bc i
+    modify $ coerce (|| x `IVL.notMember` bci)
+    return $ IVL.clamp bci x
 
 
 --awkward because cant deconstruct interval into inf sup
