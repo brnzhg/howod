@@ -21,7 +21,8 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
 - base >= 4.7 && < 5
-- transformers
+
+
 
 library:
   source-dirs: src
@@ -32,7 +33,9 @@ library:
   - mtl
   - monad-loops
   - hmatrix
+  - vector
   - vector-sized
+  - vector-algorithms
   - hmatrix-vector-sized
   - singletons
   - finite-typelits
@@ -40,6 +43,7 @@ library:
   - ghc-typelits-natnormalise
   - MonadRandom
   - intervals
+  - gdp
 
 
 executables:

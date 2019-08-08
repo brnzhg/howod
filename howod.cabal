@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 87473ce56983b04f33f5e7e730704d0faffc0c1e2117bbc386b108cccce7a50b
+-- hash: fc0e3cb260acad60e267e7a2283c21d81d04693872c1fe665e1e4795c9e927a2
 
 name:           howod
 version:        0.1.0.0
@@ -27,6 +27,7 @@ source-repository head
 
 library
   exposed-modules:
+      Data.Vector.GDP.Sorted
       Lib
       Neldermead
   other-modules:
@@ -38,6 +39,7 @@ library
     , base >=4.7 && <5
     , containers
     , finite-typelits
+    , gdp
     , ghc-typelits-knownnat
     , ghc-typelits-natnormalise
     , hmatrix
@@ -48,7 +50,8 @@ library
     , mtl
     , primitive
     , singletons
-    , transformers
+    , vector
+    , vector-algorithms
     , vector-sized
   default-language: Haskell2010
 
@@ -68,7 +71,6 @@ executable howod-exe
     , hmatrix
     , hmatrix-vector-sized
     , howod
-    , transformers
     , vector-sized
   default-language: Haskell2010
 
@@ -83,5 +85,4 @@ test-suite howod-test
   build-depends:
       base >=4.7 && <5
     , howod
-    , transformers
   default-language: Haskell2010
