@@ -26,9 +26,9 @@ import Data.Coerce
 
 import Control.Monad
 import Control.Monad.Primitive
-
+import Control.Monad.State.Strict
+import Control.Monad.Loops (untilJust)
 import Control.Arrow ((&&&))
---import Control.Monad.State.Strict
 
 import qualified Data.Finite as F
 --import Data.Singletons (Sing, sing, fromSing)
@@ -58,6 +58,7 @@ type role SortedBy nominal nominal
 
 type FinInterval (n :: Nat) = IVL.Interval (F.Finite n)
 
+--interval includes index of first element >= search element
 newtype SortedInsertSearchOf cmp vecName elemName searchName = SortedInsertSearchOf GDP.Defn
 
 type role SortedInsertSearchOf nominal nominal nominal nominal
@@ -86,17 +87,16 @@ sortedInsertWholeIndexInterval _ e = GDP.assert
   $ (minBound IVL.... maxBound) 
 
 -- -> SortedInsertSearch (n + 1) e GDP.? SortedInsertSearchOf comp vecName
-sortedInsertSearchAtIdx :: (KnownNat n, VGB.Vector v e) 
+sortedInsertChopAtIdx :: (KnownNat n, VGB.Vector v e) 
  => (VAI.Comparison e GDP.~~ cmp)
  -> (VGS.Vector v n e GDP.~~ vName GDP.::: SortedBy cmp vName)
  -> (e GDP.~~ eName)
  -> F.Finite n
  -> FinInterval (n + 1) GDP.? SortedInsertSearchOf cmp vName eName
-sortedInsertSearchAtIdx (GDP.The cmp) (GDP.The v) (GDP.The e) i = GDP.assert 
-  $ case cmp e (VGS.index v i) of
-    GT -> (F.shift i IVL.... maxBound)
-    EQ -> IVL.singleton weakI
-    LT -> (minBound IVL.... weakI)
+sortedInsertChopAtIdx (GDP.The cmp) (GDP.The v) (GDP.The e) i = GDP.assert 
+  $ case cmp (VGS.index v i) e of
+    LT -> (F.shift i IVL.... maxBound)
+    _ -> (minBound IVL.... weakI)
   where
     weakI = F.weaken i
 
@@ -110,16 +110,17 @@ sortedInsertSearchBinaryStep :: forall n v e cmp vName eName.
 sortedInsertSearchBinaryStep cmp v e ivlName@(GDP.The ivl)
   | IVL.singular ivl = ivlName
   | otherwise = sortedInsertSearchIntersect ivlName 
-                $ sortedInsertSearchAtIdx cmp v e mi
+                $ sortedInsertChopAtIdx cmp v e mi
   where
-    (mi :: F.Finite n) = fromInteger 
-                         $ (toInteger hi + toInteger li) `div` 2 
-                         -- nb must be < n, since li < hi and hi <= n
-    li = IVL.inf ivl
-    hi = IVL.sup ivl
+    (mi :: F.Finite n) = fromMaybe (error "Bisect must be at idx < (n+1)") 
+                         . F.strengthen 
+                         . IVL.sup 
+                         . fst 
+                         . IVL.bisectIntegral 
+                         $ ivl 
 
 
---note, element must be <= element at i, and >= element at (i - 1)
+--intervals contain index of first element >= search element e
 sortedInsertSearchIntersect :: KnownNat n 
  => FinInterval n GDP.? SortedInsertSearchOf cmp v e
  -> FinInterval n GDP.? SortedInsertSearchOf cmp v e
@@ -134,6 +135,44 @@ sortedInsertIdxFromInterval :: KnownNat n
 sortedInsertIdxFromInterval (GDP.The ivl) 
   | IVL.singular ivl = Just . GDP.assert $ IVL.inf ivl
   | otherwise = Nothing
+
+binarySearchFromInterval :: (KnownNat n, VGB.Vector v e) 
+ => (VAI.Comparison e GDP.~~ cmp)
+ -> (VGS.Vector v n e GDP.~~ vName GDP.::: SortedBy cmp vName)
+ -> (e GDP.~~ eName)
+ -> FinInterval (n + 1) GDP.? SortedInsertSearchOf cmp vName eName
+ -> F.Finite (n + 1) GDP.? SortedInsertIdx cmp vName eName
+binarySearchFromInterval cmp v e ivl = flip evalState ivl . untilJust $ do
+  modify $ sortedInsertSearchBinaryStep cmp v e
+  sortedInsertIdxFromInterval <$> get
+
+binarySearch :: (KnownNat n, VGB.Vector v e) 
+ => (VAI.Comparison e GDP.~~ cmp)
+ -> (VGS.Vector v n e GDP.~~ vName GDP.::: SortedBy cmp vName)
+ -> (e GDP.~~ eName)
+ -> F.Finite (n + 1) GDP.? SortedInsertIdx cmp vName eName
+binarySearch cmp v e = 
+  binarySearchFromInterval cmp v e $ sortedInsertWholeIndexInterval v e
+
+
+sortedInsertAndShiftRight :: (KnownNat n, VGB.Vector v e)
+  => (VGS.Vector v n e GDP.~~ vName GDP.::: SortedBy cmp vName)
+  -> F.Finite (n + 1) GDP.? SortedInsertIdx cmp vName eName
+  -> (e GDP.~~ eName)
+  -> VGS.Vector v n e GDP.? SortedBy cmp
+sortedInsertAndShiftRight (GDP.The v) (GDP.The i) (GDP.The e) = GDP.assert
+  $ case F.strengthen i of
+    Nothing -> v
+    Just i' -> (v VGS.//)
+               $ (i', e) 
+                 : [(k', VGS.index v k) | (k, k') <- uncurry zip 
+                                                      . (id &&& tail) 
+                                                      $ [i'..maxBound]]
+                                                      
+--sortedInsertBelowAndShiftLeft
+
+
+--sortedInsertAtIdx
 
 {-
 newtype Opposite comp = Opposite Defn
