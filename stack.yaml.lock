@@ -3,7 +3,21 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    cabal-file:
+      size: 2076
+      sha256: 7c7259bfde13de6c82e636fccb5091a12160d4bf3c8b5752744c7a2a0d06be16
+    name: gdp
+    version: 0.0.1.0
+    git: https://github.com/matt-noonan/gdp.git
+    pantry-tree:
+      size: 1071
+      sha256: 8279f493a0fc07cdf981551cf283cee25a65b5216e966d9b19adc614eaef1837
+    commit: 6e09928c2c2f5467e09dfc69310d6b67d6361422
+  original:
+    git: https://github.com/matt-noonan/gdp.git
+    commit: 6e09928c2c2f5467e09dfc69310d6b67d6361422
 snapshots:
 - completed:
     size: 504771
