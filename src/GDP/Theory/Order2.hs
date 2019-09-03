@@ -52,8 +52,9 @@ data GtOrEq :: Ordering -> * where
 cmpIsCmpBy :: Ord a => (Comparison a GDP.~~ cmpName) -> GDP.Proof (IsCmpBy a cmpName)
 cmpIsCmpBy _ = GDP.axiom
 
-
-
+--TODO do we want proof or just name?
+--compareBy :: Ord a => (Comparison a GDP.~~ cmpName) 
+--  (a GDP.~~ x1Name) -> (a GDP.~~ x2Name) -> GDP.Proof (OrderingBy o)
 
 instance GDP.Fact (IsCmpBy a cmpName) => GDP.Reflexive (EqBy a cmpName) where
   refl = GDP.axiom

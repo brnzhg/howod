@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2c440a20805468d1b156eb345fdd44107db0a505d2513f5c96de81b088fa8321
+-- hash: d1198cd9f77cfdd81bc535db1b2e10ff28f5ab3a67ed68d9732b845c8b4153aa
 
 name:           howod
 version:        0.1.0.0
@@ -29,6 +29,9 @@ library
   exposed-modules:
       Data.Vector.GDP.Sorted
       GDP.Theory.Order
+      GDP.Theory.Order2
+      GDP.Theory.OrderSing
+      GDP.Theory.TotalPreorder
       Lib
       Neldermead
   other-modules:
