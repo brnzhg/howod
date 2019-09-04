@@ -52,10 +52,17 @@ import GHC.TypeNats
 
 import qualified GDP
 
+--TODO alternative approach, 
+--theory with IndexOfSorted i x
+--theory of intervals
+--lots more boilerplate
 
 newtype SortedBy comp name = SortedBy GDP.Defn
 type role SortedBy nominal nominal
 
+newtype SortedByOf e cmp name = SortedByOf GDP.Defn
+--type role SortedByOf nominal nominal nominal
+--TODO figure out type role, note e is not a name
 
 type FinInterval (n :: Nat) = IVL.Interval (F.Finite n)
 
@@ -78,6 +85,11 @@ data SortedVectorWithCmp cmpName vName v n e = SortedVectorWithCmp {
 
 --newtype MVecSorted comp v (n :: Nat) s a = MVecSorted (VGMS.MVector v n s a)
 
+getSortedByOf :: (KnownNat n, VGB.Vector v e) 
+  => (VGS.Vector v n e GDP.~~ vName GDP.::: SortedBy cmp vName)
+  -> GDP.Proof (SortedByOf e cmp vName)
+getSortedByOf _ = GDP.axiom
+
 sortByAndFreeze :: (PrimMonad m, VGB.Vector v e) 
   => (VAI.Comparison e GDP.~~ cmp)
   -> VGMS.MVector (VG.Mutable v) n (PrimState m) e 
@@ -88,11 +100,10 @@ sortByAndFreeze (GDP.The cmp) vm@(MVector v) = do
 
 --TODO do interval at type level nats? 
 --(VAI.Comparison e GDP.~~ comp)
-sortedInsertWholeIndexInterval :: (KnownNat n, VGB.Vector v e)
-  => (VGS.Vector v n e GDP.~~ vName GDP.::: SortedBy cmp vName)
-  -> (e GDP.~~ eName)
-  -> FinInterval (n + 1) GDP.?SortedInsertSearchOf comp vName eName
-sortedInsertWholeIndexInterval _ e = GDP.assert 
+sortedInsertWholeIndexInterval :: (KnownNat n, GDP.Fact (SortedByOf e cmp vName))
+  => (e GDP.~~ eName)
+  -> FinInterval (n + 1) GDP.?SortedInsertSearchOf cmp vName eName
+sortedInsertWholeIndexInterval e = GDP.assert 
   $ (minBound IVL.... maxBound) 
 
 -- -> SortedInsertSearch (n + 1) e GDP.? SortedInsertSearchOf comp vecName
@@ -161,13 +172,14 @@ binarySearchFromInterval cmp v e ivl = flip evalState ivl . untilJust $ do
   modify $ sortedInsertSearchBinaryStep cmp v e
   sortedInsertIdxFromInterval <$> get
 
-binarySearch :: (KnownNat n, VGB.Vector v e) 
+binarySearch :: forall n v e cmp vName eName. (KnownNat n, VGB.Vector v e) 
  => (VAI.Comparison e GDP.~~ cmp)
  -> (VGS.Vector v n e GDP.~~ vName GDP.::: SortedBy cmp vName)
  -> (e GDP.~~ eName)
  -> F.Finite (n + 1) GDP.? SortedInsertIdx cmp vName eName
-binarySearch cmp v e = 
-  binarySearchFromInterval cmp v e $ sortedInsertWholeIndexInterval v e
+binarySearch cmp v e = binarySearchFromInterval cmp v e
+  $ GDP.note (getSortedByOf v) $ sortedInsertWholeIndexInterval e
+  --binarySearchFromInterval cmp v e $ sortedInsertWholeIndexInterval v e
 
 
 sortedInsertAndShiftRight :: (KnownNat n, VGB.Vector v e)
@@ -186,9 +198,12 @@ sortedInsertAndShiftRight (GDP.The v) (GDP.The i) (GDP.The e) = GDP.assert
 
 
 --TODO need ORD
-sortedInsertCmpAndChop :: forall n v e cmp vName eName1 eName2. (KnownNat n, VGB.Vector v e) 
+
+-- VGB.Vector v e
+--(VGS.Vector v n e GDP.~~ vName GDP.::: SortedBy cmp vName)
+
+sortedInsertCmpAndChop :: forall n e cmp vName eName1 eName2. KnownNat n
  => (VAI.Comparison e GDP.~~ cmp)
- -> (VGS.Vector v n e GDP.~~ vName GDP.::: SortedBy cmp vName)
  -> (e GDP.~~ eName1)
  -> FinInterval (n + 1) GDP.? SortedInsertSearchOf cmp vName eName1
  -> (e GDP.~~ eName2)
@@ -196,7 +211,7 @@ sortedInsertCmpAndChop :: forall n v e cmp vName eName1 eName2. (KnownNat n, VGB
  -> (Ordering
     , FinInterval (n + 1) GDP.? SortedInsertSearchOf cmp vName eName1
     , FinInterval (n + 1) GDP.? SortedInsertSearchOf cmp vName eName2)
-sortedInsertCmpAndChop (GDP.The cmp) (GDP.The v) (GDP.The e1) (GDP.The i1) (GDP.The e2) (GDP.The i2) =
+sortedInsertCmpAndChop (GDP.The cmp) (GDP.The e1) (GDP.The i1) (GDP.The e2) (GDP.The i2) =
   updateIvls (cmp e1 e2) i1 i2
   where
     --ecmp = cmp e1 e2
@@ -210,19 +225,17 @@ sortedInsertCmpAndChop (GDP.The cmp) (GDP.The v) (GDP.The e1) (GDP.The i1) (GDP.
                               , (GDP.assert $ updateLowerIvl ivl2 ivl1))
     updateLowerIvl lowi highi = undefined
     updateHigherIvl lowi highi = undefined
-    
 
-  
- {-
-  GDP.assert 
-  $ case cmp (VGS.index v i) e of
-    LT -> (F.shift i IVL.... maxBound)
+--TODO version that just takes in one element
+
+{-
+ GDP.assert 
+ $ case cmp (VGS.index v i) e of
+      LT -> (F.shift i IVL.... maxBound)
     _ -> (minBound IVL.... weakI)
   where
     weakI = F.weaken i
- -}
-
-
+-}
 
 --TODO create NMSimplex modules
 --(vertex ?NMVertexObj f), property of vertex to have objective
@@ -256,6 +269,3 @@ rev (The xs) = defn (reverse xs)
 rev_ord_lemma :: SortedBy comp xs -> Proof (SortedBy (Opposite comp) (Reverse xs))
 rev_ord_lemma _ = axiom
 -}
-
-
-
