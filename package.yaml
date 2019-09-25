@@ -63,6 +63,8 @@ executables:
     - finite-typelits
     - ghc-typelits-knownnat
     - MonadRandom
+    - primitive
+    - gdp
 
 
 tests:

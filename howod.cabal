@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4cb2256ab034e7c5fbf1467cf6cf669e3be7e9732b09b506577326a4cb02e521
+-- hash: d008d94d04e402cb5d453e8974eac88c11adbf2a3a4bb9e0a838fcbfe2bf83dd
 
 name:           howod
 version:        0.1.0.0
@@ -35,6 +35,7 @@ library
       GDP.Theory.TotalPreorder2
       Lib
       Neldermead
+      ObjRSimplex
   other-modules:
       Paths_howod
   hs-source-dirs:
@@ -72,10 +73,12 @@ executable howod-exe
     , base >=4.7 && <5
     , containers
     , finite-typelits
+    , gdp
     , ghc-typelits-knownnat
     , hmatrix
     , hmatrix-vector-sized
     , howod
+    , primitive
     , vector-sized
   default-language: Haskell2010
 

@@ -81,6 +81,7 @@ newtype OnBounds = OnBounds { unOnBounds :: Bool }
 makeNMVertex :: KnownNat n => (R n -> ℝ) -> R n -> NMVertex n
 makeNMVertex f x = NMVertex { getX = x, getFx = f x }
 
+--TODO actually need to change case 2 to keep if better than second worst (not best)
 nextNMSimplex :: forall n. (KnownNat n, 1 <= n) 
   => NMScalars -> (R n -> ℝ) -> NMSimplex n -> NMSimplex n
 nextNMSimplex env f (NMSimplex vtxs)
