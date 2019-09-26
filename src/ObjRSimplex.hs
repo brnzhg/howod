@@ -25,6 +25,8 @@ module ObjRSimplex (
   , CmpObjRVtx
   , makeFObjRVtx
   , cmpObjRVtx
+  , RVtxObjCmp
+  , getRVtxObjCmp
   ) where
 
 import Data.Ord (comparing)
@@ -72,8 +74,8 @@ newtype FObjRVtx fObjName n =
 newtype ObjRSimplex fObjName n = 
   ObjRSimplex { vtxs :: VSimplex (FObjRVtx fObjName) n }
 
-newtype SortedObjRSimplex cmpName fObjName n =
-  SortedObjRSimplex { vtxs :: VSimplex (FObjRVtx fObjName) n GDP.? SortedBy cmpName }
+newtype SortedObjRSimplex fObjName n =
+  SortedObjRSimplex { vtxs :: VSimplex (FObjRVtx fObjName) n GDP.? SortedBy (RVtxObjCmp fObjName) }
 
 type CmpObjRVtx fObjName n = Comparison (FObjRVtx fObjName n)
 
@@ -87,3 +89,20 @@ makeFObjRVtx (GDP.The f) x = FObjRVtx $ GDP.assert ObjRVtx { getX = x, getFx = f
 cmpObjRVtx :: CmpObjRVtx fObjName n
 cmpObjRVtx (FObjRVtx (GDP.The vtx1)) (FObjRVtx (GDP.The vtx2)) = 
   comparing getFx vtx1 vtx2
+
+
+newtype RVtxObjCmp fObjName = RVtxObjCmp GDP.Defn
+type role RVtxObjCmp nominal
+
+getRVtxObjCmp :: (ObjRF n GDP.~~ fObjName) 
+  -> (CmpObjRVtx fObjName n GDP.~~ RVtxObjCmp fObjName)
+getRVtxObjCmp f = GDP.defn cmpObjRVtx
+
+
+newtype VtxsOfObjRSimplex vName = VtxsOfObjRSimplex GDP.Defn
+type role VtxsOfObjRSimplex nominal
+
+getObjRSimplexNamedVtxs :: forall fObjName smplxName n. 
+  ObjRSimplex fObjName n GDP.~~ smplxName
+  -> (VSimplex (FObjRVtx fObjName) n GDP.~~ VtxsOfObjRSimplex smplxName)
+getObjRSimplexNamedVtxs (GDP.The s) = GDP.defn $ vtxs (s :: ObjRSimplex fObjName n)

@@ -36,10 +36,10 @@ createObjSimplex :: (ObjRF n GDP.~~ fObjName)
   -> ObjRSimplex fObjName n
 createObjSimplex f = ObjRSimplex . VS.map (makeFObjRVtx f)
 
-sortObjSimplex :: forall fObjName cmpName n m. PrimMonad m 
-  => (CmpObjRVtx fObjName n GDP.~~ cmpName)
+sortObjSimplex :: forall fObjName n m. PrimMonad m 
+  => (CmpObjRVtx fObjName n GDP.~~ RVtxObjCmp fObjName)
   -> ObjRSimplex fObjName n 
-  -> m (SortedObjRSimplex cmpName fObjName n)
+  -> m (SortedObjRSimplex fObjName n)
 sortObjSimplex cmp smplx = do
   v <- VS.thaw $ vtxs (smplx :: ObjRSimplex fObjName n)
   SortedObjRSimplex <$> sortByAndFreeze cmp v
@@ -47,8 +47,8 @@ sortObjSimplex cmp smplx = do
 
 main :: IO ()
 main = do
-  GDP.name norm_1 $ \f -> 
-    GDP.name cmpObjRVtx $ \c -> do
-      let smplx = createObjSimplex f simplexEx1
-      (SortedObjRSimplex v) <- sortObjSimplex c smplx
-      putStrLn . show . VS.map (GDP.the . getObjRVtx) $ GDP.the v
+  GDP.name norm_1 $ \f -> do
+    let smplx = createObjSimplex f simplexEx1
+        c = getRVtxObjCmp f
+    (SortedObjRSimplex v) <- sortObjSimplex c smplx
+    putStrLn . show . VS.map (GDP.the . getObjRVtx) $ GDP.the v
