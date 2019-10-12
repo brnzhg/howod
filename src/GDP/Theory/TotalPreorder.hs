@@ -15,7 +15,7 @@ module GDP.Theory.TotalPreorder (
   Comparison
   , LtEqBy
   , GtEqBy, EqBy, LtBy, GtBy
-  , IsCmpBy
+  , IsCmpOf
   , CmpByCase(..)
   , classify
   , cmpIsCmpBy
@@ -50,8 +50,8 @@ type LtBy cmpName x1 x2 = (LtEqBy cmpName x1 x2)
 type GtBy cmpName x1 x2 = (GtEqBy cmpName x1 x2)
                           GDP.&& (GDP.Not (LtEqBy cmpName x1 x2))
 
-newtype IsCmpBy a cmpName = IsCmpBy GDP.Defn
-type role IsCmpBy nominal nominal
+newtype IsCmpOf a cmpName = IsCmpBy GDP.Defn
+type role IsCmpOf nominal nominal
 
 data CmpByCase cmpName x1 x2 = 
   EqByCase (GDP.Proof (EqBy cmpName x1 x2)) 
@@ -67,10 +67,10 @@ classify (GDP.The cmp) (GDP.The x1) (GDP.The x2) = case cmp x1 x2 of
   LT -> LtByCase GDP.axiom
   GT -> GtByCase GDP.axiom
 
-cmpIsCmpBy :: (Comparison a GDP.~~ cmpName) -> GDP.Proof (IsCmpBy a cmpName)
+cmpIsCmpBy :: (Comparison a GDP.~~ cmpName) -> GDP.Proof (IsCmpOf a cmpName)
 cmpIsCmpBy _ = GDP.axiom
 
-ltEqByRefl :: GDP.Fact (IsCmpBy a cmpName)
+ltEqByRefl :: GDP.Fact (IsCmpOf a cmpName)
   => (a GDP.~~ xName) 
   -> GDP.Proof (LtEqBy cmpName xName xName)
 ltEqByRefl _ = GDP.axiom
@@ -79,12 +79,12 @@ instance GDP.Transitive (LtEqBy cmpName) where
   transitive _ _ = GDP.axiom
 
 --nb derived
-gtEqByRefl :: GDP.Fact (IsCmpBy a cmpName)
+gtEqByRefl :: GDP.Fact (IsCmpOf a cmpName)
   => (a GDP.~~ xName) 
   -> GDP.Proof (GtEqBy cmpName xName xName)
 gtEqByRefl = ltEqByRefl
 
-eqByRefl :: GDP.Fact (IsCmpBy a cmpName)
+eqByRefl :: GDP.Fact (IsCmpOf a cmpName)
   => (a GDP.~~ xName)  
   -> GDP.Proof (EqBy cmpName xName xName)
 eqByRefl x = GDP.introAnd (ltEqByRefl x) (gtEqByRefl x)

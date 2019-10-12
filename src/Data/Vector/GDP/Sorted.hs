@@ -9,6 +9,8 @@
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE RoleAnnotations       #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeFamilies          #-}
 
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Normalise #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.KnownNat.Solver #-}
@@ -72,13 +74,24 @@ import qualified GDP
 --theory of intervals
 --lots more boilerplate
 
-newtype SortedBy comp name = SortedBy GDP.Defn
+newtype SortedBy cmp name = SortedBy GDP.Defn
 type role SortedBy nominal nominal
 
 newtype SortedByOf e cmp name = SortedByOf GDP.Defn
 type role SortedByOf representational nominal nominal
 
 type FinInterval (n :: Nat) = IVL.Interval (F.Finite n)
+
+
+instance GDP.Argument (SortedBy cmp name) GDP.LHS where
+  type GetArg (SortedBy cmp name) GDP.LHS = cmp
+  type SetArg (SortedBy cmp name) GDP.LHS cmp' = SortedBy cmp' name
+
+instance GDP.Argument (SortedBy cmp name) GDP.RHS where
+  type GetArg (SortedBy cmp name) GDP.RHS = name
+  type SetArg (SortedBy cmp name) GDP.RHS name' = SortedBy cmp name'
+
+
 
 --interval includes index of first element >= search element
 newtype SortedInsertSearchOf cmp vName elemName searchName = SortedInsertSearchOf GDP.Defn

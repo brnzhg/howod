@@ -7,6 +7,8 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE RoleAnnotations       #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -26,6 +28,7 @@ import Data.Maybe (fromMaybe)
 import qualified Data.Foldable as FLD
 
 import Data.Coerce
+import Data.Proxy
 
 import Control.Monad
 import Control.Monad.Primitive
@@ -35,65 +38,38 @@ import Control.Arrow ((&&&))
 
 import qualified Data.Finite as F
 
-import qualified Data.Vector.Generic as VG
 import qualified Data.Vector.Generic.Base as VGB
-import qualified Data.Vector.Generic.Mutable.Base as VGMB
-
-import qualified Data.Vector.Sized as VS
 import qualified Data.Vector.Generic.Sized as VGS
-import qualified Data.Vector.Generic.Mutable.Sized as VGMS
-import Data.Vector.Generic.Mutable.Sized.Internal (MVector(..))
-
-import qualified Data.Vector.Algorithms.Intro as VAI
-import Data.Vector.Algorithms.Intro (Comparison)
 
 import qualified Numeric.Interval.NonEmpty as IVL
 
 import GHC.TypeNats
 
 import qualified GDP
+import GDP.Theory.VectorBasic (IsVector, vectorIsVector)
+import Data.Vector.GDP.Sorted (Comparison)
+import qualified Data.Vector.GDP.Sorted as GDPVS
+import GDP.Theory.RecordField
 
 --TODO alternative approach, 
---theory with IndexOfSorted i x
 --theory of intervals
 --lots more boilerplate
 newtype IsCmpVecOf cmpName vecName cmpVecName = IsCmpVecOf GDP.Defn
 type role IsCmpVecOf nominal nominal nominal
 
-newtype CmpVecVec cmpVecName = CmpVecVec GDP.Defn
-type role CmpVecVec nominal
 
-newtype CmpVecCmp cmpVecName = CmpVecCmp GDP.Defn
-type role CmpVecCmp nominal
-
-
-newtype SortedBy comp name = SortedBy GDP.Defn
-type role SortedBy nominal nominal
-
-newtype SortedByOf e cmp name = SortedByOf GDP.Defn
-type role SortedByOf representational nominal nominal
-
-newtype CmpVecSorted cmpVecName = CmpVecSorted GDP.Defn
-type role CmpVecSorted nominal
-
-type FinInterval (n :: Nat) = IVL.Interval (F.Finite n)
-
---interval includes index of first element >= search element
-
-newtype SortedInsertSearchOf cmpVecName elemName searchName = SortedInsertSearchOf GDP.Defn
-type role SortedInsertSearchOf nominal nominal nominal
-
-newtype SortedInsertIdx cmpVecName elemName idxName = SortedInsertIdx GDP.Defn
-type role SortedInsertIdx nominal nominal nominal
+--type IsSortedCmpVecOf cmpName vName cvName = 
+--GDP.Proof (IsCmpVecOf cmpName vName cvName 
+--GDP.&& GDPVS.SortedBy cmpName vName)
+newtype SortedCmpVec cmpVecName = SortedCmpVec GDP.Defn
+type role SortedCmpVec nominal
 
 
-data CmpVector v n e = CmpVector {
+data CmpVector v (n :: Nat) e = CmpVector {
   cmpVecCmp :: Comparison e
   , cmpVecVec :: VGS.Vector v n e
 }
 
-
---TODO when do you want Is proofs, when do you just want names?
 makeCmpVectorOf :: (VGB.Vector v e)
   => (Comparison e GDP.~~ cmpName)
   -> (VGS.Vector v n e GDP.~~ vName)
@@ -101,46 +77,61 @@ makeCmpVectorOf :: (VGB.Vector v e)
 makeCmpVectorOf (GDP.The cmp) (GDP.The v) = GDP.assert
   $ CmpVector { cmpVecCmp = cmp, cmpVecVec = v }
 
-getCmpOfCmpVector :: (CmpVector v n e GDP.~~ cmpVecName) 
-  -> (Comparison e GDP.~~ CmpVecCmp cmpVecName)
-getCmpOfCmpVector = GDP.defn . cmpVecCmp . GDP.the
+instance HasNamedField "Cmp" (CmpVector v n e) (Comparison e) where
+  --getNamedField :: (CmpVector v n e GDP.~~ cmpVecName) 
+  -- -> (Comparison e GDP.~~ IsFieldOf "Cmp" cmpVecName)
+  getNamedField _ = GDP.defn . cmpVecCmp . GDP.the
 
-getVecOfCmpVector :: (VGB.Vector v e)
-  => (CmpVector v n e GDP.~~ cmpVecName)
-  -> (VGS.Vector v n e GDP.~~ CmpVecVec cmpVecName)
-getVecOfCmpVector = GDP.defn . cmpVecVec . GDP.the
+instance (VGB.Vector v e) => HasNamedField "Vec" (CmpVector v n e) (VGS.Vector v n e) where
+  getNamedField _ = GDP.defn . cmpVecVec . GDP.the
 
+instance PropHasField "Cmp" (IsCmpVecOf cmpName vName) cmpName where
+  --matchPropField :: GDP.Proof (IsCmpVecOf cmpName vName cvName)
+  --  -> GDP.Proof (IsFieldOf "Cmp" cvName GDP.== cmpName)
+  matchPropField _ _ = GDP.axiom
 
---TODO what the hell to name this
-cmpOfIsCmpVecOf :: GDP.Proof (IsCmpVecOf cmpName vName cmpVecName)
-  -> GDP.Proof (CmpVecCmp cmpVecName GDP.== cmpName)
-cmpOfIsCmpVecOf _ = GDP.axiom
-
-vecOfIsCmpVecOf :: GDP.Proof (IsCmpVecOf cmpName vName cmpVecName)
-  -> GDP.Proof (CmpVecVec cmpVecName GDP.== vName)
-vecOfIsCmpVecOf _ = GDP.axiom
-
---TODO is constraint necessary? is this gonna break things?
-cmpVectorIsCmpVecOf :: 
-  GDP.Proof (IsCmpVecOf (CmpVecCmp cmpVecName) (CmpVecVec cmpVecName) cmpVecName)
-cmpVectorIsCmpVecOf = GDP.axiom
--- (VGP.Vector v e) 
--- => (CmpVector v n e GDP.~~ cmpVecName)
+instance PropHasField "Vec" (IsCmpVecOf cmpName vName) vName where
+  matchPropField _ _ = GDP.axiom
 
 
-sortByAndFreeze :: (PrimMonad m, VGB.Vector v e) 
-  => (Comparison e GDP.~~ cmp)
-  -> VGMS.MVector (VG.Mutable v) n (PrimState m) e 
-  -> m (VGS.Vector v n e GDP.?SortedBy cmp)
-sortByAndFreeze (GDP.The cmp) vm@(MVector v) = do
-  VAI.sortBy cmp v
-  GDP.assert <$> VGS.freeze vm
 
-{- 
-sortedInsertWholeIndexInterval :: (KnownNat n, GDP.Fact (SortedByOf e cmp vName))
-  => (e GDP.~~ eName)
-  -> FinInterval (n + 1) GDP.?SortedInsertSearchOf cmp vName eName
-sortedInsertWholeIndexInterval e = GDP.assert 
-  $ (minBound IVL.... maxBound) 
--}
+sortedCmpVecFromSortedVec
+  :: GDP.Proof (GDPVS.SortedBy (IsFieldOf "Cmp" cvName) (IsFieldOf "Vec" cvName))
+  -> GDP.Proof (SortedCmpVec cvName)
+sortedCmpVecFromSortedVec _ = GDP.axiom
+
+sortedVecFromSortedCmpVec
+  :: GDP.Proof (SortedCmpVec cvName)
+  -> GDP.Proof (GDPVS.SortedBy (IsFieldOf "Cmp" cvName) (IsFieldOf "Vec" cvName))
+sortedVecFromSortedCmpVec _ = GDP.axiom
+
+
+testProof :: GDP.Proof (IsCmpVecOf cmpName vName cvName)
+  -> GDP.Proof (GDPVS.SortedBy cmpName vName) 
+  -> GDP.Proof (SortedCmpVec cvName)
+testProof isCmpVecProof sortedProof = undefined --do
+  --sp <- sortedProof
+  --subCmp <- GDP.substitute (GDP.arg :: GDP.Arg GDP.LHS) mc sp
+  --sortedCmpVecFromSortedVec 
+  --  $ GDP.substitute (GDP.arg :: GDP.Arg GDP.RHS) mv subCmp
+  where
+    matchCmp = GDP.symmetric $ matchPropField (Proxy :: Proxy "Cmp") isCmpVecProof
+    matchVec = GDP.symmetric $ matchPropField (Proxy :: Proxy "Vec") isCmpVecProof
+
+
+
+
+
+
+
+--test
+cmpOfIsCmpVecOf :: GDP.Proof (IsCmpVecOf cmpName vName cvName) 
+  -> GDP.Proof (IsFieldOf "Cmp" cvName GDP.== cmpName)
+cmpOfIsCmpVecOf = matchPropField Proxy
+
+
+--cmpVectorIsCmpVecOf :: 
+-- GDP.Proof (IsCmpVecOf (CmpVecCmp cvName) (CmpVecVec cvName) cmpVecName)
+-- cmpVectorIsCmpVecOf = GDP.axiom
+
 

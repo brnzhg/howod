@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d008d94d04e402cb5d453e8974eac88c11adbf2a3a4bb9e0a838fcbfe2bf83dd
+-- hash: e8507efdfc32b32642b486563e8983b9af53abfdcf9e65bb914c1f5102c2b52e
 
 name:           howod
 version:        0.1.0.0
@@ -28,11 +28,13 @@ source-repository head
 library
   exposed-modules:
       Data.Vector.GDP.Sorted
-      GDP.Theory.Order
-      GDP.Theory.Order2
-      GDP.Theory.OrderSing
+      Data.Vector.GDP.Sorted2
+      GDP.Theory.ClassicalExtras
+      GDP.Theory.RecordField
       GDP.Theory.TotalPreorder
-      GDP.Theory.TotalPreorder2
+      GDP.Theory.TotalPreorderOrd
+      GDP.Theory.VectorBasic
+      GDP.Theory.VectorSorted
       Lib
       Neldermead
       ObjRSimplex
