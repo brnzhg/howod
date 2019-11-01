@@ -51,16 +51,14 @@ import Data.Vector.GDP.Sorted (Comparison)
 import qualified Data.Vector.GDP.Sorted as GDPVS
 import GDP.Theory.RecordField
 
+--TODO look at how internal modules work, do that
+
 --TODO alternative approach, 
 --theory of intervals
 --lots more boilerplate
 newtype IsCmpVecOf cmpName vecName cmpVecName = IsCmpVecOf GDP.Defn
 type role IsCmpVecOf nominal nominal nominal
 
-
---type IsSortedCmpVecOf cmpName vName cvName = 
---GDP.Proof (IsCmpVecOf cmpName vName cvName 
---GDP.&& GDPVS.SortedBy cmpName vName)
 newtype SortedCmpVec cmpVecName = SortedCmpVec GDP.Defn
 type role SortedCmpVec nominal
 
@@ -109,11 +107,10 @@ sortedVecFromSortedCmpVec _ = GDP.axiom
 testProof :: GDP.Proof (IsCmpVecOf cmpName vName cvName)
   -> GDP.Proof (GDPVS.SortedBy cmpName vName) 
   -> GDP.Proof (SortedCmpVec cvName)
-testProof isCmpVecProof sortedProof = undefined --do
-  --sp <- sortedProof
-  --subCmp <- GDP.substitute (GDP.arg :: GDP.Arg GDP.LHS) mc sp
-  --sortedCmpVecFromSortedVec 
-  --  $ GDP.substitute (GDP.arg :: GDP.Arg GDP.RHS) mv subCmp
+testProof isCmpVecProof =
+  sortedCmpVecFromSortedVec
+  . GDP.substitute (GDP.arg :: GDP.Arg GDP.LHS) matchCmp
+  . GDP.substitute (GDP.arg :: GDP.Arg GDP.RHS) matchVec
   where
     matchCmp = GDP.symmetric $ matchPropField (Proxy :: Proxy "Cmp") isCmpVecProof
     matchVec = GDP.symmetric $ matchPropField (Proxy :: Proxy "Vec") isCmpVecProof
@@ -125,9 +122,9 @@ testProof isCmpVecProof sortedProof = undefined --do
 
 
 --test
-cmpOfIsCmpVecOf :: GDP.Proof (IsCmpVecOf cmpName vName cvName) 
+cmpOfIsCmpVec :: GDP.Proof (IsCmpVecOf cmpName vName cvName) 
   -> GDP.Proof (IsFieldOf "Cmp" cvName GDP.== cmpName)
-cmpOfIsCmpVecOf = matchPropField Proxy
+cmpOfIsCmpVec = matchPropField Proxy
 
 
 --cmpVectorIsCmpVecOf :: 

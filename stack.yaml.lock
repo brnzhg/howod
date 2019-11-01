@@ -10,14 +10,14 @@ packages:
       sha256: 7c7259bfde13de6c82e636fccb5091a12160d4bf3c8b5752744c7a2a0d06be16
     name: gdp
     version: 0.0.1.0
-    git: https://github.com/matt-noonan/gdp.git
+    git: https://github.com/brnzhg/gdp.git
     pantry-tree:
-      size: 1071
-      sha256: 8279f493a0fc07cdf981551cf283cee25a65b5216e966d9b19adc614eaef1837
-    commit: 6e09928c2c2f5467e09dfc69310d6b67d6361422
+      size: 1070
+      sha256: 72900d062ef25b1cfe56742994f6d68dced525ef482954c69dcf9debd6bf5fde
+    commit: 9a587d55ca7a291ca98dbe94ee3a0695bb3cac76
   original:
-    git: https://github.com/matt-noonan/gdp.git
-    commit: 6e09928c2c2f5467e09dfc69310d6b67d6361422
+    git: https://github.com/brnzhg/gdp.git
+    commit: 9a587d55ca7a291ca98dbe94ee3a0695bb3cac76
 snapshots:
 - completed:
     size: 504771
